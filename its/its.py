@@ -13,14 +13,15 @@ import xml.dom.minidom
 
 from xml.dom.minidom import parse
 
-#BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-#TIS_DOWNLOAD_DIR = (os.path.join(BASE_DIR, 'Qos'),)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+TIS_DIR = (os.path.join(BASE_DIR, 'freeway.gov.db'))
 
 CHECK_INTERVAL = 60 #secs
 URL_TISVCLOUD = "http://tisvcloud.freeway.gov.tw/"
 
-#路段五分鐘動態資訊
-TIS_ROADLEVEL5 = "roadlevel_value5.xml.gz"
+TIS_ROADLEVEL_VALUE5 = "roadlevel_value5.xml"
+TIS_ROADLEVEL_INFO = "roadlevel_info.xml"
+TIS_ROADLEVEL_THRESHOLD = "roadlevel_threshold.xml"
 
 FREEWAY_5_ROUTEIDS_S = ('nfb0365', 'nfb0367', 'nfb0369', 'nfb0373', 'nfb0375', 'nfb0377')
 FREEWAY_5_ROUTEIDS_N = ('nfb0366', 'nfb0368', 'nfb0370', 'nfb0374', 'nfb0376', 'nfb0378')
@@ -32,15 +33,41 @@ class TisvcloudChecker(threading.Thread):
 	
     def run(self):
 	
+	try:
+	    r1 = urllib2.urlopen(URL_TISVCLOUD + TIS_ROADLEVEL_INFO + '.gz')
+	    r2 = urllib2.urlopen(URL_TISVCLOUD + TIS_ROADLEVEL_THRESHOLD + '.gz')
+	except:
+	    #todo here
+	    pass
+	else:
+	    b1 = StringIO.StringIO()
+	    b2 = StringIO.StringIO()
+	    b1.write(r1.read())
+	    b2.write(r2.read())
+	    b1.seek(0)
+	    b2.seek(0)
+	
+	    df1 = gzip.GzipFile(fileobj=b1, mode='rb')
+	    df2 = gzip.GzipFile(fileobj=b2, mode='rb')
+	
+	    with open(os.path.join(TIS_DIR, TIS_ROADLEVEL_INFO), 'w') as of1:
+		of1.write(df1.read())
+
+	    with open(os.path.join(TIS_DIR, TIS_ROADLEVEL_THRESHOLD), 'w') as of2:
+		of2.write(df2.read())
+
+	    b1.close()
+	    b2.close()
+	    df1.close()
+	    df2.close()
+
 	while(True):
 	    print "Checking Tisvcloud DB..."
 
-	    #now = datetime.datetime.now()
-
 	    try:
-	    	response = urllib2.urlopen(URL_TISVCLOUD + TIS_ROADLEVEL5)
+	    	response = urllib2.urlopen(URL_TISVCLOUD + TIS_ROADLEVEL_VALUE5 + '.gz')
 	    except:
-		#todo
+		#todo here
 		pass
 	    else:
 	    	buf = StringIO.StringIO()
@@ -49,7 +76,7 @@ class TisvcloudChecker(threading.Thread):
 
 	    	decompressFile = gzip.GzipFile(fileobj=buf, mode='rb')
 
-	    	with open('roadlevel_value5.xml', 'w') as outfile:
+		with open(os.path.join(TIS_DIR, TIS_ROADLEVEL_VALUE5), 'w') as outfile:
 		    outfile.write(decompressFile.read())
 
 		buf.close()
@@ -61,7 +88,7 @@ class TisvcloudChecker(threading.Thread):
 class Freeway(object):
 
     def __init__(self):
-	self.roadlevel5Qos = ((xml.dom.minidom.parse('roadlevel_value5.xml')).documentElement).getElementsByTagName('Info')
+	self.roadlevel5Qos = ((xml.dom.minidom.parse(os.path.join(TIS_DIR, TIS_ROADLEVEL_VALUE5))).documentElement).getElementsByTagName('Info')
 	return
 
     def getQos(self, number, direction, start_section='', end_section=''):
@@ -86,6 +113,8 @@ def main():
 
     qos = freeway.getQos(5, 'N')
     print str(qos)
+
+    print os.path.join(TIS_DIR, TIS_ROADLEVEL_VALUE5)
 
 
 if __name__ == "__main__":

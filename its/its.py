@@ -9,6 +9,9 @@ import urllib2
 import gzip
 import StringIO
 import sys
+import xml.dom.minidom
+
+from xml.dom.minidom import parse
 
 #BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 #TIS_DOWNLOAD_DIR = (os.path.join(BASE_DIR, 'Qos'),)
@@ -19,6 +22,8 @@ URL_TISVCLOUD = "http://tisvcloud.freeway.gov.tw/"
 #路段五分鐘動態資訊
 TIS_ROADLEVEL5 = "roadlevel_value5.xml.gz"
 
+FREEWAY_5_ROUTEIDS_S = ('nfb0001', 'nfb0003', 'nfb0005', 'nfb0007')
+FREEWAY_5_ROUTEIDS_N = ('nfb0011', 'nfb0013', 'nfb0015', 'nfb0017')
     
 class TisvcloudChecker(threading.Thread):
 
@@ -53,13 +58,36 @@ class TisvcloudChecker(threading.Thread):
 	    time.sleep(CHECK_INTERVAL)
 
 
-class TisQos(object):
+class Freeway(object):
 
     def __init__(self):
+	self.roadlevel5Qos = ((xml.dom.minidom.parse('roadlevel_value5.xml')).documentElement).getElementsByTagName('Info')
 	return
 
-    def getFreewayQos(self, number, direction):
-	if direction is 'N':
-	    print "direction is N"
-	elif direction is 'S':
-	    print "direction is S"
+    def getQos(self, number, direction, start_section, end_section):
+
+	qos = {}
+
+	if number is 5:
+	    if direction is 'N':
+		routeids = FREEWAY_5_ROUTEIDS_N
+	    elif direction is 'S':
+		routeids = FREEWAY_5_ROUTEIDS_S
+
+	    for q in self.roadlevel5Qos:
+		if q.getAttribute('routeid') in routeids:
+		    qos[q.getAttribute('routeid')] = {'level':q.getAttribute('level'), 'value':q.getAttribute('value'), 'traveltime':q.getAttribute('traveltime')} 
+
+	return qos
+
+
+def main():
+    freeway = Freeway()
+
+    qos = freeway.getQos(5, 'N', 'sec1', 'sec2')
+    print str(qos)
+
+
+if __name__ == "__main__":
+    main()
+

@@ -22,8 +22,8 @@ URL_TISVCLOUD = "http://tisvcloud.freeway.gov.tw/"
 #路段五分鐘動態資訊
 TIS_ROADLEVEL5 = "roadlevel_value5.xml.gz"
 
-FREEWAY_5_ROUTEIDS_S = ('nfb0001', 'nfb0003', 'nfb0005', 'nfb0007')
-FREEWAY_5_ROUTEIDS_N = ('nfb0011', 'nfb0013', 'nfb0015', 'nfb0017')
+FREEWAY_5_ROUTEIDS_S = ('nfb0365', 'nfb0367', 'nfb0369', 'nfb0373', 'nfb0375', 'nfb0377')
+FREEWAY_5_ROUTEIDS_N = ('nfb0366', 'nfb0368', 'nfb0370', 'nfb0374', 'nfb0376', 'nfb0378')
     
 class TisvcloudChecker(threading.Thread):
 
@@ -64,7 +64,7 @@ class Freeway(object):
 	self.roadlevel5Qos = ((xml.dom.minidom.parse('roadlevel_value5.xml')).documentElement).getElementsByTagName('Info')
 	return
 
-    def getQos(self, number, direction, start_section, end_section):
+    def getQos(self, number, direction, start_section='', end_section=''):
 
 	qos = {}
 
@@ -84,7 +84,7 @@ class Freeway(object):
 def main():
     freeway = Freeway()
 
-    qos = freeway.getQos(5, 'N', 'sec1', 'sec2')
+    qos = freeway.getQos(5, 'N')
     print str(qos)
 
 

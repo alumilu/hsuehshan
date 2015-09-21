@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<XML_Head version="1.1" listname="服務水準門檻分級" updatetime="2015/09/21 00:00:00" interval="86400">
+	<Infos>
+		<Info sourceid="nfb" level="1" levelname="順暢" index="速率" topvalue="" lowvalue="80" colorR="140" colorG="195" colorB="30"></Info>
+		<Info sourceid="nfb" level="2" levelname="車多" index="速率" topvalue="79" lowvalue="60" colorR="255" colorG="255" colorB="0"></Info>
+		<Info sourceid="nfb" level="3" levelname="車多" index="速率" topvalue="59" lowvalue="40" colorR="255" colorG="130" colorB="0"></Info>
+		<Info sourceid="nfb" level="4" levelname="壅塞" index="速率" topvalue="39" lowvalue="0" colorR="255" colorG="0" colorB="0"></Info>
+	</Infos>
+</XML_Head>

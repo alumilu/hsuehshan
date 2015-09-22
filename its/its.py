@@ -16,7 +16,7 @@ from xml.dom.minidom import parse
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TIS_DIR = (os.path.join(BASE_DIR, 'freeway.gov.db'))
 
-CHECK_INTERVAL = 60 #secs
+CHECK_INTERVAL = 300 #secs
 URL_TISVCLOUD = "http://tisvcloud.freeway.gov.tw/"
 
 TIS_ROADLEVEL_VALUE5 = "roadlevel_value5.xml"
@@ -34,6 +34,7 @@ class TisvcloudChecker(threading.Thread):
     def run(self):
 	
 	try:
+	    print "updating freeway info and threshold data..."
 	    r1 = urllib2.urlopen(URL_TISVCLOUD + TIS_ROADLEVEL_INFO + '.gz')
 	    r2 = urllib2.urlopen(URL_TISVCLOUD + TIS_ROADLEVEL_THRESHOLD + '.gz')
 	except:
@@ -61,8 +62,9 @@ class TisvcloudChecker(threading.Thread):
 	    df1.close()
 	    df2.close()
 
+	print "updating freeway realtime Qos..."
+
 	while(True):
-	    print "Checking Tisvcloud DB..."
 
 	    try:
 	    	response = urllib2.urlopen(URL_TISVCLOUD + TIS_ROADLEVEL_VALUE5 + '.gz')

@@ -12,9 +12,13 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "hsuehshan.settings")
 
 ##
 from its.its import TisvcloudChecker
+from its.its import HerePlatform
 
 tis = TisvcloudChecker()
 tis.start()
+
+here = HerePlatform()
+here.start()
 ##
 
 from django.core.wsgi import get_wsgi_application

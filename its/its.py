@@ -62,9 +62,9 @@ class TisvcloudChecker(threading.Thread):
 	    df1.close()
 	    df2.close()
 
-	print "updating freeway realtime Qos..."
-
 	while(True):
+
+	    print "updating freeway realtime traffic conditions..."
 
 	    try:
 	    	response = urllib2.urlopen(URL_TISVCLOUD + TIS_ROADLEVEL_VALUE5 + '.gz')
@@ -85,6 +85,41 @@ class TisvcloudChecker(threading.Thread):
 		decompressFile.close()
 
 	    time.sleep(CHECK_INTERVAL)
+
+
+class HerePlatform(threading.Thread):
+    
+    def __init__(self):
+	threading.Thread.__init__(self)
+
+	self.app_id_code = 'app_id=dxxoJdEHCE9sgSpRpWw0&app_code=PbDsi8zN_DujvDV4bmNyqA'
+	self.route_api_url = 'https://route.cit.api.here.com/routing/7.2/calculateroute.xml?'
+	self.route_api_options = '&mode=fastest%3Bcar%3Btraffic%3Aenabled&'
+	self.route_api_departure_time = '&departure=now'
+	self.routes = {'test':'waypoint0=25.060272%2C121.647702&waypoint1=24.893166%2C121.194685',}
+
+
+    def run(self):
+
+	while(True):
+	    
+	    print 'updating here traffic conditions...'
+
+	    try:
+		responses = urllib2.urlopen(self.route_api_url + self.routes['test'] + self.route_api_options + self.app_id_code + self.route_api_departure_time)
+	    except:
+		#todo here
+		pass
+	    else:		
+		with open(os.path.join(TIS_DIR, 'here_test_route.xml'), 'w') as outfile:
+		    outfile.write(responses.read())
+	
+	    time.sleep(CHECK_INTERVAL)
+
+    def getQos(self):
+	qos = {}
+
+	return qos
 
 
 class Freeway(object):

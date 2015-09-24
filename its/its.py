@@ -14,28 +14,27 @@ import xml.dom.minidom
 from xml.dom.minidom import parse
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-TIS_DIR = (os.path.join(BASE_DIR, 'freeway.gov.db'))
+TIS_DIR = (os.path.join(BASE_DIR, 'traffic_data'))
 
 CHECK_INTERVAL = 300 #secs
-URL_TISVCLOUD = "http://tisvcloud.freeway.gov.tw/"
 
-TIS_ROADLEVEL_VALUE5 = "roadlevel_value5.xml"
-TIS_ROADLEVEL_INFO = "roadlevel_info.xml"
-TIS_ROADLEVEL_THRESHOLD = "roadlevel_threshold.xml"
-
-FREEWAY_5_ROUTEIDS_S = ('nfb0365', 'nfb0367', 'nfb0369', 'nfb0373', 'nfb0375', 'nfb0377')
-FREEWAY_5_ROUTEIDS_N = ('nfb0366', 'nfb0368', 'nfb0370', 'nfb0374', 'nfb0376', 'nfb0378')
     
 class TisvCloudService(threading.Thread):
 
     def __init__(self):
 	threading.Thread.__init__(self)
+
+	self.tis_url = 'http://tisvcloud.freeway.gov.tw/'
+	self.tis_roadlevel_value5 = 'roadlevel_value5.xml'
+	self.tis_roadlevel_info = 'roadlevel_info.xml'
+	self.tis_roadlevel_threshold = 'roadlevel_threshold.xml'
+	self.tis_route_nf5_s = ('nfb0365', 'nfb0367', 'nfb0369', 'nfb0373', 'nfb0375', 'nfb0377')
+	self.tis_route_nf5_n = ('nfb0366', 'nfb0368', 'nfb0370', 'nfb0374', 'nfb0376', 'nfb0378')
 	
     def run(self):
-	
 	try:
-	    r1 = urllib2.urlopen(URL_TISVCLOUD + TIS_ROADLEVEL_INFO + '.gz')
-	    r2 = urllib2.urlopen(URL_TISVCLOUD + TIS_ROADLEVEL_THRESHOLD + '.gz')
+	    r1 = urllib2.urlopen(self.tis_url + self.tis_roadlevel_info + '.gz')
+	    r2 = urllib2.urlopen(self.tis_url + self.tis_roadlevel_threshold + '.gz')
 	except:
 	    #todo here
 	    pass
@@ -50,10 +49,10 @@ class TisvCloudService(threading.Thread):
 	    df1 = gzip.GzipFile(fileobj=b1, mode='rb')
 	    df2 = gzip.GzipFile(fileobj=b2, mode='rb')
 	
-	    with open(os.path.join(TIS_DIR, TIS_ROADLEVEL_INFO), 'w') as of1:
+	    with open(os.path.join(TIS_DIR, self.tis_roadlevel_info), 'w') as of1:
 		of1.write(df1.read())
 
-	    with open(os.path.join(TIS_DIR, TIS_ROADLEVEL_THRESHOLD), 'w') as of2:
+	    with open(os.path.join(TIS_DIR, self.tis_roadlevel_threshold), 'w') as of2:
 		of2.write(df2.read())
 
 	    b1.close()
@@ -62,9 +61,8 @@ class TisvCloudService(threading.Thread):
 	    df2.close()
 
 	while(True):
-
 	    try:
-	    	response = urllib2.urlopen(URL_TISVCLOUD + TIS_ROADLEVEL_VALUE5 + '.gz')
+	    	response = urllib2.urlopen(self.tis_url + self.tis_roadlevel_value5 + '.gz')
 	    except:
 		#todo here
 		pass
@@ -75,7 +73,7 @@ class TisvCloudService(threading.Thread):
 
 	    	decompressFile = gzip.GzipFile(fileobj=buf, mode='rb')
 
-		with open(os.path.join(TIS_DIR, TIS_ROADLEVEL_VALUE5), 'w') as outfile:
+		with open(os.path.join(TIS_DIR, self.tis_roadlevel_value5), 'w') as outfile:
 		    outfile.write(decompressFile.read())
 
 		buf.close()
@@ -98,9 +96,7 @@ class HereMapService(threading.Thread):
 		      }
 
     def run(self):
-
 	while(True):
-	    
 	    for key in self.routes:
 	    	try:
 		    responses = urllib2.urlopen(self.route_api_url + self.routes[key] + self.route_api_options + self.app_id_code + self.route_api_departure_time)
@@ -122,22 +118,22 @@ class HereMapService(threading.Thread):
 class Freeway(object):
 
     def __init__(self):
-	self.roadlevel5Qos = ((xml.dom.minidom.parse(os.path.join(TIS_DIR, TIS_ROADLEVEL_VALUE5))).documentElement).getElementsByTagName('Info')
+	#self.roadlevel5Qos = ((xml.dom.minidom.parse(os.path.join(TIS_DIR, TIS_ROADLEVEL_VALUE5))).documentElement).getElementsByTagName('Info')
 	return
 
     def getQos(self, number, direction, start_section='', end_section=''):
 
 	qos = {}
 
-	if number is 5:
-	    if direction is 'N':
-		routeids = FREEWAY_5_ROUTEIDS_N
-	    elif direction is 'S':
-		routeids = FREEWAY_5_ROUTEIDS_S
+	#if number is 5:
+	#    if direction is 'N':
+	#	routeids = FREEWAY_5_ROUTEIDS_N
+	#    elif direction is 'S':
+	#	routeids = FREEWAY_5_ROUTEIDS_S
 
-	    for q in self.roadlevel5Qos:
-		if q.getAttribute('routeid') in routeids:
-		    qos[q.getAttribute('routeid')] = {'level':q.getAttribute('level'), 'value':q.getAttribute('value'), 'traveltime':q.getAttribute('traveltime')} 
+	#    for q in self.roadlevel5Qos:
+	#	if q.getAttribute('routeid') in routeids:
+	#	    qos[q.getAttribute('routeid')] = {'level':q.getAttribute('level'), 'value':q.getAttribute('value'), 'traveltime':q.getAttribute('traveltime')} 
 
 	return qos
 

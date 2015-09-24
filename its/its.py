@@ -26,7 +26,7 @@ TIS_ROADLEVEL_THRESHOLD = "roadlevel_threshold.xml"
 FREEWAY_5_ROUTEIDS_S = ('nfb0365', 'nfb0367', 'nfb0369', 'nfb0373', 'nfb0375', 'nfb0377')
 FREEWAY_5_ROUTEIDS_N = ('nfb0366', 'nfb0368', 'nfb0370', 'nfb0374', 'nfb0376', 'nfb0378')
     
-class TisvcloudChecker(threading.Thread):
+class TisvCloudService(threading.Thread):
 
     def __init__(self):
 	threading.Thread.__init__(self)
@@ -34,7 +34,6 @@ class TisvcloudChecker(threading.Thread):
     def run(self):
 	
 	try:
-	    print "updating freeway info and threshold data..."
 	    r1 = urllib2.urlopen(URL_TISVCLOUD + TIS_ROADLEVEL_INFO + '.gz')
 	    r2 = urllib2.urlopen(URL_TISVCLOUD + TIS_ROADLEVEL_THRESHOLD + '.gz')
 	except:
@@ -64,8 +63,6 @@ class TisvcloudChecker(threading.Thread):
 
 	while(True):
 
-	    print "updating freeway realtime traffic conditions..."
-
 	    try:
 	    	response = urllib2.urlopen(URL_TISVCLOUD + TIS_ROADLEVEL_VALUE5 + '.gz')
 	    except:
@@ -87,7 +84,7 @@ class TisvcloudChecker(threading.Thread):
 	    time.sleep(CHECK_INTERVAL)
 
 
-class HerePlatform(threading.Thread):
+class HereMapService(threading.Thread):
     
     def __init__(self):
 	threading.Thread.__init__(self)
@@ -96,23 +93,23 @@ class HerePlatform(threading.Thread):
 	self.route_api_url = 'https://route.cit.api.here.com/routing/7.2/calculateroute.xml?'
 	self.route_api_options = '&mode=fastest%3Bcar%3Btraffic%3Aenabled&'
 	self.route_api_departure_time = '&departure=now'
-	self.routes = {'test':'waypoint0=25.060272%2C121.647702&waypoint1=24.893166%2C121.194685',}
-
+	self.routes = {'route_nf1-nr62-t2':'waypoint0=25.074163%2C121.654351&waypoint1=25.105115%2C121.732100&waypoint2=25.119496%2C121.894320&waypoint3=25.102189%2C121.918021&waypoint4=25.016880%2C121.941833&waypoint5=24.868920%2C121.831650',
+		       'route_nf3a-nf3-nf5':'waypoint0=25.004415%2C121.580521&waypoint1=25.034974%2C121.623374&waypoint2=24.830491%2C121.790767',
+		      }
 
     def run(self):
 
 	while(True):
 	    
-	    print 'updating here traffic conditions...'
-
-	    try:
-		responses = urllib2.urlopen(self.route_api_url + self.routes['test'] + self.route_api_options + self.app_id_code + self.route_api_departure_time)
-	    except:
-		#todo here
-		pass
-	    else:		
-		with open(os.path.join(TIS_DIR, 'here_test_route.xml'), 'w') as outfile:
-		    outfile.write(responses.read())
+	    for key in self.routes:
+	    	try:
+		    responses = urllib2.urlopen(self.route_api_url + self.routes[key] + self.route_api_options + self.app_id_code + self.route_api_departure_time)
+	    	except:
+		    #todo here
+		    pass
+	    	else:		
+		    with open(os.path.join(TIS_DIR, 'here_' + key  + '.xml'), 'w') as outfile:
+		    	outfile.write(responses.read())
 	
 	    time.sleep(CHECK_INTERVAL)
 

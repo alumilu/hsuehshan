@@ -11,13 +11,13 @@ import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "hsuehshan.settings")
 
 ##
-from its.its import TisvcloudChecker
-from its.its import HerePlatform
+from its.its import TisvCloudService
+from its.its import HereMapService
 
-tis = TisvcloudChecker()
-tis.start()
+tisv = TisvCloudService()
+tisv.start()
 
-here = HerePlatform()
+here = HereMapService()
 here.start()
 ##
 

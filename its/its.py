@@ -28,8 +28,8 @@ class TisvCloudService(threading.Thread):
 	self.tis_roadlevel_value5 = 'roadlevel_value5.xml'
 	self.tis_roadlevel_info = 'roadlevel_info.xml'
 	self.tis_roadlevel_threshold = 'roadlevel_threshold.xml'
-	self.tis_route_nf5_s = ('nfb0365', 'nfb0367', 'nfb0369', 'nfb0373', 'nfb0375', 'nfb0377')
-	self.tis_route_nf5_n = ('nfb0366', 'nfb0368', 'nfb0370', 'nfb0374', 'nfb0376', 'nfb0378')
+	self.tis_route_nf5_S = ('nfb0365', 'nfb0367', 'nfb0369', 'nfb0373', 'nfb0375', 'nfb0377')
+	self.tis_route_nf5_N = ('nfb0366', 'nfb0368', 'nfb0370', 'nfb0374', 'nfb0376', 'nfb0378')
 	
     def run(self):
 	try:
@@ -81,6 +81,24 @@ class TisvCloudService(threading.Thread):
 
 	    time.sleep(CHECK_INTERVAL)
 
+    def getRouteQos(self, direction):
+	qos = {}
+
+	if direction is 'N':
+            routes = self.tis_route_nf5_N
+        elif direction is 'S':
+            routes = self.tis_route_nf5_S
+        else:
+            return qos
+
+	roadlevel5Qos = ((xml.dom.minidom.parse(os.path.join(TIS_DIR, self.tis_roadlevel_value5))).documentElement).getElementsByTagName('Info')
+
+	for q in roadlevel5Qos:
+            if q.getAttribute('routeid') in routes:
+		qos[q.getAttribute('routeid')] = {'level':q.getAttribute('level'), 'value':q.getAttribute('value'), 'traveltime':q.getAttribute('traveltime')} 
+
+	return qos
+
 
 class HereMapService(threading.Thread):
     
@@ -91,60 +109,85 @@ class HereMapService(threading.Thread):
 	self.route_api_url = 'https://route.cit.api.here.com/routing/7.2/calculateroute.xml?'
 	self.route_api_options = '&mode=fastest%3Bcar%3Btraffic%3Aenabled&'
 	self.route_api_departure_time = '&departure=now'
-	self.routes = {'route_nf1-nr62-t2':'waypoint0=25.074163%2C121.654351&waypoint1=25.105115%2C121.732100&waypoint2=25.119496%2C121.894320&waypoint3=25.102189%2C121.918021&waypoint4=25.016880%2C121.941833&waypoint5=24.868920%2C121.831650',
+	self.routes_S = {'route_nf1-nr62-t2':'waypoint0=25.074163%2C121.654351&waypoint1=25.105115%2C121.732100&waypoint2=25.119496%2C121.894320&waypoint3=25.102189%2C121.918021&waypoint4=25.016880%2C121.941833&waypoint5=24.868920%2C121.831650',
 		       'route_nf3a-nf3-nf5':'waypoint0=25.004415%2C121.580521&waypoint1=25.034974%2C121.623374&waypoint2=24.830491%2C121.790767',
 		      }
+	self.routes_N ={}
 
     def run(self):
 	while(True):
-	    for key in self.routes:
+	    for key in self.routes_S: #get south-direction routes
 	    	try:
-		    responses = urllib2.urlopen(self.route_api_url + self.routes[key] + self.route_api_options + self.app_id_code + self.route_api_departure_time)
+		    responses = urllib2.urlopen(self.route_api_url + self.routes_S[key] + self.route_api_options + self.app_id_code + self.route_api_departure_time)
 	    	except:
 		    #todo here
 		    pass
 	    	else:		
 		    with open(os.path.join(TIS_DIR, 'here_' + key  + '.xml'), 'w') as outfile:
 		    	outfile.write(responses.read())
+
+	    for key in self.routes_N: #get north-direction routes
+		try:
+		    responses = urllib2.urlopen(self.route_api_url + self.routes_N[key] + self.route_api_options + self.app_id_code + self.route_api_departure_time)
+		except:
+		    #todo here
+		    pass
+		else:
+		    with open(os.path.join(TIS_DIR, 'here_' + key + '.xml'), 'w') as outfile:
+			outfile.write(responses.read())
 	
 	    time.sleep(CHECK_INTERVAL)
 
-    def getQos(self):
+    def getRouteQos(self, direction):
 	qos = {}
+
+	if direction is 'N':
+	    routes = self.routes_N
+	elif direction is 'S':
+	    routes = self.routes_S
+	else:
+	    return qos
+
+	for key in routes:
+	    summary = (((xml.dom.minidom.parse(os.path.join(TIS_DIR, 'here_' + key + '.xml'))).documentElement).getElementsByTagName('Route')[0]).getElementsByTagName('Summary')
+
+	    distance = summary[0].getElementsByTagName('Distance')[0]
+	    base_time = summary[0].getElementsByTagName('BaseTime')[0]
+	    traffic_time = summary[0].getElementsByTagName('TrafficTime')[0]
+	    travel_time = summary[0].getElementsByTagName('TravelTime')[0]
+
+	    qos[key] = {'Distance':distance.childNodes[0].data, 'BaseTime':base_time.childNodes[0].data, 'TrafficTime':traffic_time.childNodes[0].data, 'TravelTime':travel_time.childNodes[0].data}
+		
 
 	return qos
 
 
-class Freeway(object):
+class RouteCompute(object):
 
     def __init__(self):
-	#self.roadlevel5Qos = ((xml.dom.minidom.parse(os.path.join(TIS_DIR, TIS_ROADLEVEL_VALUE5))).documentElement).getElementsByTagName('Info')
 	return
 
-    def getQos(self, number, direction, start_section='', end_section=''):
+    def suggestRoute(self, direction):
+	suggested_route = None
+	best_jam_factor = 10 #road closed
 
-	qos = {}
+	here = HereMapService()
+	routes = here.getRouteQos(direction)
 
-	#if number is 5:
-	#    if direction is 'N':
-	#	routeids = FREEWAY_5_ROUTEIDS_N
-	#    elif direction is 'S':
-	#	routeids = FREEWAY_5_ROUTEIDS_S
+	for r in routes.itervalues():   
+	    jam_factor = (float(r['TrafficTime']) - float(r['BaseTime'])) / float(r['BaseTime']) 
+	    
+	    if jam_factor < best_jam_factor:
+		best_jam_factor = jam_factor
+		suggested_route = r
 
-	#    for q in self.roadlevel5Qos:
-	#	if q.getAttribute('routeid') in routeids:
-	#	    qos[q.getAttribute('routeid')] = {'level':q.getAttribute('level'), 'value':q.getAttribute('value'), 'traveltime':q.getAttribute('traveltime')} 
-
-	return qos
+	return suggested_route, best_jam_factor
 
 
 def main():
-    freeway = Freeway()
+    rc = RouteCompute()
 
-    qos = freeway.getQos(5, 'N')
-    print str(qos)
-
-    print os.path.join(TIS_DIR, TIS_ROADLEVEL_VALUE5)
+    print rc.suggestRoute('S')
 
 
 if __name__ == "__main__":

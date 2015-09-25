@@ -209,10 +209,20 @@ class RouteCompute(object):
 
 def main():
     rc = RouteCompute()
-    suggested_route = rc.suggestRoute('S')
+    log = open('log', 'w')
 
-    print "Current NF5-S Qos: %s" % rc.getNf5Qos('S')
-    print "Suggested route: %s %s" % (suggested_route['Route'], suggested_route)
+    while(True): 
+    	suggested_route = rc.suggestRoute('S')
+
+	print "NF5-S Qos:" + str(rc.getNf5Qos('S'))
+        print "Suggested:" + str(suggested_route['Route']), str(suggested_route)
+
+	print >>log, datetime.datetime.now()
+	print >>log, "NF5-S Qos:" + str(rc.getNf5Qos('S'))
+	print >>log, "Suggested:" + str(suggested_route['Route']), str(suggested_route)
+	print >>log, ""
+
+	time.sleep(CHECK_INTERVAL)
 
 
 if __name__ == "__main__":

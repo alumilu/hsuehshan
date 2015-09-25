@@ -206,23 +206,24 @@ class RouteCompute(object):
 
 	return nf5
 
+import csv
 
 def main():
     rc = RouteCompute()
-    log = open('log', 'w')
 
-    while(True): 
-    	suggested_route = rc.suggestRoute('S')
+    with open ('nf5log.csv', 'w') as logfile:
+	fields = ['Time', 'JamFactor', 'BaseTime', 'TrafficTime', 'SuggestedRoute']
+	writer = csv.DictWriter(logfile, fieldnames = fields)
+	
+	writer.writeheader()
 
-	print "NF5-S Qos:" + str(rc.getNf5Qos('S'))
-        print "Suggested:" + str(suggested_route['Route']), str(suggested_route)
+	while(True):
+	    suggestedRoute = rc.suggestRoute('S')
+	    nf5Qos = rc.getNf5Qos('S')
 
-	print >>log, datetime.datetime.now()
-	print >>log, "NF5-S Qos:" + str(rc.getNf5Qos('S'))
-	print >>log, "Suggested:" + str(suggested_route['Route']), str(suggested_route)
-	print >>log, ""
-
-	time.sleep(CHECK_INTERVAL)
+	    writer.writerow({'Time':datetime.datetime.now().isoformat(), 'JamFactor':nf5Qos['JamFactor'], 'BaseTime':nf5Qos['BaseTime'], 'TrafficTime':nf5Qos['TrafficTime'], 'SuggestedRoute':suggestedRoute})
+	    time.sleep(30)
+    
 
 
 if __name__ == "__main__":

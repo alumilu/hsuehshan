@@ -208,10 +208,31 @@ class RouteCompute(object):
 
 import csv
 
+class LogBot(object):
+    def __init__(self):
+	return
+
+    def log(self):
+         rc = RouteCompute()
+
+    	 with open(os.path.join(TIS_DIR,'log.csv'), 'aw') as logfile:
+             fields = ['Time', 'JamFactor', 'BaseTime', 'TrafficTime', 'SuggestedRoute']
+             writer = csv.DictWriter(logfile, fieldnames = fields)
+
+             writer.writeheader()
+
+             while(True):
+                 suggestedRoute = rc.suggestRoute('S')
+                 nf5Qos = rc.getNf5Qos('S')
+
+                 writer.writerow({'Time':datetime.datetime.now().isoformat(), 'JamFactor':nf5Qos['JamFactor'], 'BaseTime':nf5Qos['BaseTime'], 'TrafficTime':nf5Qos['TrafficTime'], 'SuggestedRoute':suggestedRoute})
+            	 time.sleep(60)
+
+
 def main():
     rc = RouteCompute()
 
-    with open ('nf5log.csv', 'w') as logfile:
+    with open ('log.csv', 'aw') as logfile:
 	fields = ['Time', 'JamFactor', 'BaseTime', 'TrafficTime', 'SuggestedRoute']
 	writer = csv.DictWriter(logfile, fieldnames = fields)
 	

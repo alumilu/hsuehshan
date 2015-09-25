@@ -13,12 +13,19 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "hsuehshan.settings")
 ##
 from its.its import TisvCloudService
 from its.its import HereMapService
+from its.its import LogBot
+
+import time
 
 tisv = TisvCloudService()
 tisv.start()
 
 here = HereMapService()
 here.start()
+
+logb = LogBot()
+time.sleep(5)
+logb.log()
 ##
 
 from django.core.wsgi import get_wsgi_application

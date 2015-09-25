@@ -109,7 +109,7 @@ class HereMapService(threading.Thread):
 	self.route_api_url = 'https://route.cit.api.here.com/routing/7.2/calculateroute.xml?'
 	self.route_api_options = '&mode=fastest%3Bcar%3Btraffic%3Aenabled&'
 	self.route_api_departure_time = '&departure=now'
-	self.routes_S = {'route_nf1-nr62-t2':'waypoint0=25.074163%2C121.654351&waypoint1=25.105115%2C121.732100&waypoint2=25.119496%2C121.894320&waypoint3=25.102189%2C121.918021&waypoint4=25.016880%2C121.941833&waypoint5=24.868920%2C121.831650',
+	self.routes_S = {'route_nf1-ex62-t2':'waypoint0=25.074163%2C121.654351&waypoint1=25.105115%2C121.732100&waypoint2=25.119496%2C121.894320&waypoint3=25.102189%2C121.918021&waypoint4=25.016880%2C121.941833&waypoint5=24.868920%2C121.831650',
 		       'route_nf3a-nf3-nf5':'waypoint0=25.004415%2C121.580521&waypoint1=25.034974%2C121.623374&waypoint2=24.830491%2C121.790767',
 		      }
 	self.routes_N ={}
@@ -169,25 +169,50 @@ class RouteCompute(object):
 
     def suggestRoute(self, direction):
 	suggested_route = None
-	best_jam_factor = 10 #road closed
+	best_jam_factor = 1 #road closed
 
 	here = HereMapService()
 	routes = here.getRouteQos(direction)
 
-	for r in routes.itervalues():   
-	    jam_factor = (float(r['TrafficTime']) - float(r['BaseTime'])) / float(r['BaseTime']) 
-	    
-	    if jam_factor < best_jam_factor:
-		best_jam_factor = jam_factor
-		suggested_route = r
+	#eval. current nf5 traffic condition
+	suggested_route = routes['route_nf3a-nf3-nf5']
+	best_jam_factor = (float(suggested_route['TrafficTime']) - float(suggested_route['BaseTime'])) / float(suggested_route['BaseTime'])
 
-	return suggested_route, best_jam_factor
+	if best_jam_factor <= 0.2:
+	    suggested_route['JamFactor'] = float(best_jam_factor)
+            suggested_route['Route'] = 'route_nf3a-nf3-nf5'  
+	else:
+	    for r, qos in routes.iteritems():
+		if r is 'route_nf3a-nf3-nf5':
+		    continue
+   
+	        jf = (float(qos['TrafficTime']) - float(qos['BaseTime'])) / float(qos['BaseTime']) 
+	    
+	        if jf < best_jam_factor:
+		    best_jam_factor = jf
+		    suggested_route = routes[r]
+		    suggested_route['JamFactor'] = float(best_jam_factor)
+		    suggested_route['Route'] = r
+
+	return suggested_route
+
+    def getNf5Qos(self, direction):
+	here = HereMapService()
+	routes = here.getRouteQos(direction)
+	nf5 = routes['route_nf3a-nf3-nf5']
+
+	jf = (float(nf5['TrafficTime']) - float(nf5['BaseTime'])) / float(nf5['BaseTime'])
+	nf5['JamFactor'] = float(jf)
+
+	return nf5
 
 
 def main():
     rc = RouteCompute()
+    suggested_route = rc.suggestRoute('S')
 
-    print rc.suggestRoute('S')
+    print "Current NF5-S Qos: %s" % rc.getNf5Qos('S')
+    print "Suggested route: %s %s" % (suggested_route['Route'], suggested_route)
 
 
 if __name__ == "__main__":

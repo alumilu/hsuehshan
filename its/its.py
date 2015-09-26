@@ -232,7 +232,7 @@ class LogBot(object):
 def main():
     rc = RouteCompute()
 
-    with open ('log.csv', 'aw') as logfile:
+    with open ('log.csv', 'w') as logfile:
 	fields = ['Time', 'JamFactor', 'BaseTime', 'TrafficTime', 'SuggestedRoute']
 	writer = csv.DictWriter(logfile, fieldnames = fields)
 	

@@ -208,25 +208,29 @@ class RouteCompute(object):
 
 import csv
 
-class LogBot(object):
+class LogBot(threading.Thread):
     def __init__(self):
-	return
+	threading.Thread.__init__(self)
 
     def log(self):
-         rc = RouteCompute()
+        rc = RouteCompute()
 
-    	 with open(os.path.join(TIS_DIR,'log.csv'), 'aw') as logfile:
-             fields = ['Time', 'JamFactor', 'BaseTime', 'TrafficTime', 'SuggestedRoute']
-             writer = csv.DictWriter(logfile, fieldnames = fields)
+	time.sleep(60)
 
-             writer.writeheader()
+    	with open(os.path.join(TIS_DIR,'log.csv'), 'aw') as logfile:
+            fields = ['Time', 'JamFactor', 'BaseTime', 'TrafficTime', 'SuggestedRoute']
+            writer = csv.DictWriter(logfile, fieldnames = fields)
 
-             while(True):
-                 suggestedRoute = rc.suggestRoute('S')
-                 nf5Qos = rc.getNf5Qos('S')
+            writer.writeheader()
 
-                 writer.writerow({'Time':datetime.datetime.now().isoformat(), 'JamFactor':nf5Qos['JamFactor'], 'BaseTime':nf5Qos['BaseTime'], 'TrafficTime':nf5Qos['TrafficTime'], 'SuggestedRoute':suggestedRoute})
-            	 time.sleep(60)
+            while(True):
+                suggestedRoute = rc.suggestRoute('S')
+                nf5Qos = rc.getNf5Qos('S')
+
+                writer.writerow({'Time':datetime.datetime.now().isoformat(), 'JamFactor':nf5Qos['JamFactor'], 'BaseTime':nf5Qos['BaseTime'], 'TrafficTime':nf5Qos['TrafficTime'], 'SuggestedRoute':suggestedRoute})
+
+    def run(self):
+	self.log()
 
 
 def main():

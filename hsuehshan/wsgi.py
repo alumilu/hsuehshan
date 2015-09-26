@@ -24,8 +24,7 @@ here = HereMapService()
 here.start()
 
 logb = LogBot()
-time.sleep(5)
-logb.log()
+logb.start()
 ##
 
 from django.core.wsgi import get_wsgi_application

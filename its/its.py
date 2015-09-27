@@ -215,8 +215,6 @@ class LogBot(threading.Thread):
     def log(self):
         rc = RouteCompute()
 
-	time.sleep(60)
-
     	with open(os.path.join(TIS_DIR,'log.csv'), 'aw') as logfile:
             fields = ['Time', 'JamFactor', 'BaseTime', 'TrafficTime', 'SuggestedRoute']
             writer = csv.DictWriter(logfile, fieldnames = fields)
@@ -224,6 +222,7 @@ class LogBot(threading.Thread):
             writer.writeheader()
 
             while(True):
+		time.sleep(60)
                 suggestedRoute = rc.suggestRoute('S')
                 nf5Qos = rc.getNf5Qos('S')
 

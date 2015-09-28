@@ -10,6 +10,7 @@ import gzip
 import StringIO
 import sys
 import xml.dom.minidom
+import csv
 
 from xml.dom.minidom import parse
 
@@ -228,7 +229,6 @@ class RouteCompute(object):
 
 	return nf5
 
-import csv
 
 class LogBot(threading.Thread):
     def __init__(self):
@@ -237,18 +237,24 @@ class LogBot(threading.Thread):
     def log(self):
         rc = RouteCompute()
 
-    	with open(os.path.join(TIS_DIR,'log.csv'), 'aw') as logfile:
-            fields = ['Time', 'JamFactor', 'BaseTime', 'TrafficTime', 'SuggestedRoute']
+    	with open(os.path.join(TIS_DIR,'log.csv'), 'w') as logfile:
+            fields = ['Direction', 'Time', 'JamFactor', 'BaseTime', 'TrafficTime', 'SuggestedRoute']
             writer = csv.DictWriter(logfile, fieldnames = fields)
 
             writer.writeheader()
 
             while(True):
-		time.sleep(60)
+		time.sleep(180)
+
                 suggestedRoute = rc.suggestRoute('S')
                 nf5Qos = rc.getNf5Qos('S')
 
-                writer.writerow({'Time':datetime.datetime.now().isoformat(), 'JamFactor':nf5Qos['JamFactor'], 'BaseTime':nf5Qos['BaseTime'], 'TrafficTime':nf5Qos['TrafficTime'], 'SuggestedRoute':suggestedRoute})
+                writer.writerow({'Direction':'S', 'Time':datetime.datetime.now().isoformat(), 'JamFactor':nf5Qos['JamFactor'], 'BaseTime':nf5Qos['BaseTime'], 'TrafficTime':nf5Qos['TrafficTime'], 'SuggestedRoute':suggestedRoute})
+
+		suggestedRoute = rc.suggestRoute('N')
+		nf5Qos = rc.getNf5Qos('N')
+
+		writer.writerow({'Direction':'N', 'Time':datetime.datetime.now().isoformat(), 'JamFactor':nf5Qos['JamFactor'], 'BaseTime':nf5Qos['BaseTime'], 'TrafficTime':nf5Qos['TrafficTime'], 'SuggestedRoute':suggestedRoute})
 
     def run(self):
 	self.log()

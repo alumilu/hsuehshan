@@ -29,8 +29,8 @@ class TisvCloudService(threading.Thread):
 	self.tis_roadlevel_info = 'roadlevel_info.xml'
 	self.tis_roadlevel_threshold = 'roadlevel_threshold.xml'
 	self.tis_route_nf5_S = ('nfb0365', 'nfb0367', 'nfb0369', 'nfb0373', 'nfb0375', 'nfb0377')
-	self.tis_route_nf5_N = ('nfb0366', 'nfb0368', 'nfb0370', 'nfb0374', 'nfb0376', 'nfb0378')
-	
+	self.tis_route_nf5_N = ('nfb0378', 'nfb0376', 'nfb0374', 'nfb0370', 'nfb0368', 'nfb0366')	
+
     def run(self):
 	try:
 	    r1 = urllib2.urlopen(self.tis_url + self.tis_roadlevel_info + '.gz')
@@ -110,9 +110,17 @@ class HereMapService(threading.Thread):
 	self.route_api_options = '&mode=fastest%3Bcar%3Btraffic%3Aenabled&'
 	self.route_api_departure_time = '&departure=now'
 	self.routes_S = {'route_nf1-ex62-t2':'waypoint0=25.074163%2C121.654351&waypoint1=25.105115%2C121.732100&waypoint2=25.119496%2C121.894320&waypoint3=25.102189%2C121.918021&waypoint4=25.016880%2C121.941833&waypoint5=24.868920%2C121.831650',
-		       'route_nf3a-nf3-nf5':'waypoint0=25.004415%2C121.580521&waypoint1=25.034974%2C121.623374&waypoint2=24.830491%2C121.790767',
-		      }
-	self.routes_N ={}
+		         'route_nf3a-nf3-nf5':'waypoint0=25.004415%2C121.580521&waypoint1=25.034974%2C121.623374&waypoint2=24.830491%2C121.790767',
+			 'route_nf5_s':'waypoint0=25.035518%2C121.621879&waypoint1=24.835679%2C121.790240',
+			 'route_t9_s':'waypoint0=24.951872%2C121.547779&waypoint1=24.952971%2C121.633754&waypoint2=24.933685%2C121.710629&waypoint3=24.866644%2C121.773731&waypoint4=24.839287%2C121.790698',
+			 'route_t2_s':'waypoint0=25.121010%2C121.825652&waypoint1=25.100490%2C121.917356&waypoint2=25.006969%2C122.003009&waypoint3=24.865277%2C121.828829',
+			 'route_t2c-t2_s':'waypoint0=25.102904%2C121.735896&waypoint1=25.045789%2C121.779581&waypoint2=25.018869%2C121.933434&waypoint3=24.984089%2C121.955859&waypoint4=24.865625%2C121.829209',
+		        }
+	self.routes_N = {'route_nf5_n':'waypoint0=24.835694%2C121.790403&waypoint1=25.035517%2C121.623341',
+			 'route_t9_n':'waypoint0=24.839326%2C121.790741&waypoint1=24.86638%2C121.773928&waypoint2=24.933618%2C121.710539&waypoint3=24.951834%2C121.631983&waypoint4=24.951865%2C121.547865',
+			 'route_t2_n':'waypoint0=24.865277%2C121.828829&waypoint1=25.004745%2C122.002445&waypoint2=25.099643%2C121.917105&waypoint3=25.120982%2C121.825513',
+			 'route_t2c-t2_n':'waypoint0=24.865323%2C121.829037&waypoint1=24.984089%2C121.955859&waypoint2=25.018869%2C121.933434&waypoint3=25.045789%2C121.779581&waypoint4=25.102904%2C121.735896',
+			}
 
     def run(self):
 	while(True):
@@ -175,15 +183,19 @@ class RouteCompute(object):
 	routes = here.getRouteQos(direction)
 
 	#eval. current nf5 traffic condition
-	suggested_route = routes['route_nf3a-nf3-nf5']
+	if direction is 'S':
+	    suggested_route = routes['route_nf5_s']
+	elif direction is 'N':
+	    suggested_route = routes['route_nf5_n']
+
 	best_jam_factor = (float(suggested_route['TrafficTime']) - float(suggested_route['BaseTime'])) / float(suggested_route['BaseTime'])
 
 	if best_jam_factor <= 0.2:
 	    suggested_route['JamFactor'] = float(best_jam_factor)
-            suggested_route['Route'] = 'route_nf3a-nf3-nf5'  
+            suggested_route['Route'] = 'route_nf5'  
 	else:
 	    for r, qos in routes.iteritems():
-		if r is 'route_nf3a-nf3-nf5':
+		if r is 'route_nf5':
 		    continue
    
 	        jf = (float(qos['TrafficTime']) - float(qos['BaseTime'])) / float(qos['BaseTime']) 
@@ -199,7 +211,12 @@ class RouteCompute(object):
     def getNf5Qos(self, direction):
 	here = HereMapService()
 	routes = here.getRouteQos(direction)
-	nf5 = routes['route_nf3a-nf3-nf5']
+	nf5 = None
+
+	if direction is 'S':
+	    nf5 = routes['route_nf5_s']
+	elif direction is 'N':
+	    nf5 = routes['route_nf5_n']
 
 	jf = (float(nf5['TrafficTime']) - float(nf5['BaseTime'])) / float(nf5['BaseTime'])
 	nf5['JamFactor'] = float(jf)
@@ -235,19 +252,13 @@ class LogBot(threading.Thread):
 def main():
     rc = RouteCompute()
 
-    with open ('log.csv', 'w') as logfile:
-	fields = ['Time', 'JamFactor', 'BaseTime', 'TrafficTime', 'SuggestedRoute']
-	writer = csv.DictWriter(logfile, fieldnames = fields)
-	
-	writer.writeheader()
+    #suggestedRoute = rc.suggestRoute('S')
+    #nf5Qos = rc.getNf5Qos('S')
 
-	while(True):
-	    suggestedRoute = rc.suggestRoute('S')
-	    nf5Qos = rc.getNf5Qos('S')
-
-	    writer.writerow({'Time':datetime.datetime.now().isoformat(), 'JamFactor':nf5Qos['JamFactor'], 'BaseTime':nf5Qos['BaseTime'], 'TrafficTime':nf5Qos['TrafficTime'], 'SuggestedRoute':suggestedRoute})
-	    time.sleep(30)
-    
+    print 'nf5 Qos S: %s' % str(rc.getNf5Qos('S'))
+    print 'nf5 Qos N: %s' % str(rc.getNf5Qos('N'))
+    print 'suggest route S: %s' % str(rc.suggestRoute('S'))
+    print 'suggest route N: %s' % str(rc.suggestRoute('N')) 
 
 
 if __name__ == "__main__":

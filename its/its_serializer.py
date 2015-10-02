@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 
 class RouteQos(object):
-    def __init__(self, routename, basetime, traffictime, jamfator):
+    def __init__(self, routename, basetime, traffictime, jamfactor):
         self.BaseTime = basetime
         self.TrafficTime = traffictime
         self.JamFactor = jamfactor

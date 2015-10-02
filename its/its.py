@@ -11,8 +11,9 @@ import StringIO
 import sys
 import xml.dom.minidom
 import csv
-import its_serializer 
 
+
+from its_serializer import RouteQos
 from xml.dom.minidom import parse
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -129,7 +130,7 @@ class HereMapService(threading.Thread):
 	while(True):
 	    for key in HereMapService._routes_S: #get south-direction routes
 	    	try:
-		    responses = urllib2.urlopen(HereMapService._route_api_url +HereMapService._routes_S[key] + HereMapService._route_api_options + HereMapService._app_id_code + HereMapService._route_api_departure_time)
+		    responses = urllib2.urlopen(HereMapService._route_api_url + HereMapService._routes_S[key] + HereMapService._route_api_options + HereMapService._app_id_code + HereMapService._route_api_departure_time)
 	    	except:
 		    #todo here
 		    pass
@@ -213,17 +214,23 @@ class RouteCompute(object):
     def getNf5Qos(self, direction):
 	here = HereMapService()
 	routes = here.getRouteQos(direction)
+	routename = ''
 	nf5 = None
 
 	if direction is 'S':
 	    nf5 = routes['route_nf5_s']
+	    routename = 'route_nf5_s'
 	elif direction is 'N':
 	    nf5 = routes['route_nf5_n']
+	    routename = 'route_nf5_n'
 
 	jf = (float(nf5['TrafficTime']) - float(nf5['BaseTime'])) / float(nf5['BaseTime'])
 	nf5['JamFactor'] = float(jf)
 
-	return nf5
+	qos = RouteQos(routename, float(nf5['BaseTime']), float(nf5['TrafficTime']), jf)
+
+	#return nf5
+	return qos
 
     def getNf5QosTisv(self, direction):
 	tisv = TisvCloudService()
@@ -251,12 +258,12 @@ class LogBot(threading.Thread):
                 suggestedRoute = rc.suggestRoute('S')
                 nf5Qos = rc.getNf5Qos('S')
 
-                writer.writerow({'Direction':'S', 'Time':datetime.datetime.now().isoformat(), 'JamFactor':nf5Qos['JamFactor'], 'BaseTime':nf5Qos['BaseTime'], 'TrafficTime':nf5Qos['TrafficTime'], 'SuggestedRoute':suggestedRoute})
+                writer.writerow({'Direction':'S', 'Time':datetime.datetime.now().isoformat(), 'JamFactor':nf5Qos.JamFactor, 'BaseTime':nf5Q0s.BaseTime, 'TrafficTime':nf5Qos.TrafficTime, 'SuggestedRoute':suggestedRoute})
 
 		suggestedRoute = rc.suggestRoute('N')
 		nf5Qos = rc.getNf5Qos('N')
 
-		writer.writerow({'Direction':'N', 'Time':datetime.datetime.now().isoformat(), 'JamFactor':nf5Qos['JamFactor'], 'BaseTime':nf5Qos['BaseTime'], 'TrafficTime':nf5Qos['TrafficTime'], 'SuggestedRoute':suggestedRoute})
+		writer.writerow({'Direction':'N', 'Time':datetime.datetime.now().isoformat(), 'JamFactor':nf5Qos.JamFactor, 'BaseTime':nf5Qos.BaseTime, 'TrafficTime':nf5Qos.TrafficTime, 'SuggestedRoute':suggestedRoute})
 
     def run(self):
 	self.log()

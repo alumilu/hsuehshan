@@ -11,6 +11,7 @@ import StringIO
 import sys
 import xml.dom.minidom
 import csv
+import its_serializer 
 
 from xml.dom.minidom import parse
 
@@ -103,30 +104,32 @@ class TisvCloudService(threading.Thread):
 
 class HereMapService(threading.Thread):
     
+    _app_id_code = 'app_id=dxxoJdEHCE9sgSpRpWw0&app_code=PbDsi8zN_DujvDV4bmNyqA'
+    _route_api_url = 'https://route.cit.api.here.com/routing/7.2/calculateroute.xml?'
+    _route_api_options = '&mode=fastest%3Bcar%3Btraffic%3Aenabled&'
+    _route_api_departure_time = '&departure=now'
+    _routes_names = ('route_nf5_s','route_nf5_n','route_t9_s','route_t9_n','route_t2_s','route_t2_n','route_t2c-t2_s','route_t2c-t2_n')
+    _routes_S = {'route_nf5_s':'waypoint0=25.035518%2C121.621879&waypoint1=24.835679%2C121.790240',
+		 'route_t9_s':'waypoint0=24.951872%2C121.547779&waypoint1=24.952971%2C121.633754&waypoint2=24.933685%2C121.710629&waypoint3=24.866644%2C121.773731&waypoint4=24.839287%2C121.790698',
+		 'route_t2_s':'waypoint0=25.121010%2C121.825652&waypoint1=25.100490%2C121.917356&waypoint2=25.006969%2C122.003009&waypoint3=24.865277%2C121.828829',
+		 'route_t2c-t2_s':'waypoint0=25.102904%2C121.735896&waypoint1=25.045789%2C121.779581&waypoint2=25.018869%2C121.933434&waypoint3=24.984089%2C121.955859&waypoint4=24.865625%2C121.829209',
+	        }
+
+    _routes_N = {'route_nf5_n':'waypoint0=24.835694%2C121.790403&waypoint1=25.035517%2C121.623341',
+		 'route_t9_n':'waypoint0=24.839326%2C121.790741&waypoint1=24.86638%2C121.773928&waypoint2=24.933618%2C121.710539&waypoint3=24.951834%2C121.631983&waypoint4=24.951865%2C121.547865',
+		 'route_t2_n':'waypoint0=24.865277%2C121.828829&waypoint1=25.004745%2C122.002445&waypoint2=25.099643%2C121.917105&waypoint3=25.120982%2C121.825513',
+		 'route_t2c-t2_n':'waypoint0=24.865323%2C121.829037&waypoint1=24.984089%2C121.955859&waypoint2=25.018869%2C121.933434&waypoint3=25.045789%2C121.779581&waypoint4=25.102904%2C121.735896',
+		}
+ 
+
     def __init__(self):
 	threading.Thread.__init__(self)
 
-	self.app_id_code = 'app_id=dxxoJdEHCE9sgSpRpWw0&app_code=PbDsi8zN_DujvDV4bmNyqA'
-	self.route_api_url = 'https://route.cit.api.here.com/routing/7.2/calculateroute.xml?'
-	self.route_api_options = '&mode=fastest%3Bcar%3Btraffic%3Aenabled&'
-	self.route_api_departure_time = '&departure=now'
-	self.routes_S = {'route_nf5_s':'waypoint0=25.035518%2C121.621879&waypoint1=24.835679%2C121.790240',
-			 'route_t9_s':'waypoint0=24.951872%2C121.547779&waypoint1=24.952971%2C121.633754&waypoint2=24.933685%2C121.710629&waypoint3=24.866644%2C121.773731&waypoint4=24.839287%2C121.790698',
-			 'route_t2_s':'waypoint0=25.121010%2C121.825652&waypoint1=25.100490%2C121.917356&waypoint2=25.006969%2C122.003009&waypoint3=24.865277%2C121.828829',
-			 'route_t2c-t2_s':'waypoint0=25.102904%2C121.735896&waypoint1=25.045789%2C121.779581&waypoint2=25.018869%2C121.933434&waypoint3=24.984089%2C121.955859&waypoint4=24.865625%2C121.829209',
-		        }
-
-	self.routes_N = {'route_nf5_n':'waypoint0=24.835694%2C121.790403&waypoint1=25.035517%2C121.623341',
-			 'route_t9_n':'waypoint0=24.839326%2C121.790741&waypoint1=24.86638%2C121.773928&waypoint2=24.933618%2C121.710539&waypoint3=24.951834%2C121.631983&waypoint4=24.951865%2C121.547865',
-			 'route_t2_n':'waypoint0=24.865277%2C121.828829&waypoint1=25.004745%2C122.002445&waypoint2=25.099643%2C121.917105&waypoint3=25.120982%2C121.825513',
-			 'route_t2c-t2_n':'waypoint0=24.865323%2C121.829037&waypoint1=24.984089%2C121.955859&waypoint2=25.018869%2C121.933434&waypoint3=25.045789%2C121.779581&waypoint4=25.102904%2C121.735896',
-			}
-
     def run(self):
 	while(True):
-	    for key in self.routes_S: #get south-direction routes
+	    for key in HereMapService._routes_S: #get south-direction routes
 	    	try:
-		    responses = urllib2.urlopen(self.route_api_url + self.routes_S[key] + self.route_api_options + self.app_id_code + self.route_api_departure_time)
+		    responses = urllib2.urlopen(HereMapService._route_api_url +HereMapService._routes_S[key] + HereMapService._route_api_options + HereMapService._app_id_code + HereMapService._route_api_departure_time)
 	    	except:
 		    #todo here
 		    pass
@@ -134,9 +137,9 @@ class HereMapService(threading.Thread):
 		    with open(os.path.join(TIS_DIR, 'here_' + key  + '.xml'), 'w') as outfile:
 		    	outfile.write(responses.read())
 
-	    for key in self.routes_N: #get north-direction routes
+	    for key in HereMapService._routes_N: #get north-direction routes
 		try:
-		    responses = urllib2.urlopen(self.route_api_url + self.routes_N[key] + self.route_api_options + self.app_id_code + self.route_api_departure_time)
+		    responses = urllib2.urlopen(HereMapService._route_api_url + HereMapService._routes_N[key] + HereMapService._route_api_options +HereMapService._app_id_code + HereMapService._route_api_departure_time)
 		except:
 		    #todo here
 		    pass
@@ -150,9 +153,9 @@ class HereMapService(threading.Thread):
 	qos = {}
 
 	if direction is 'N':
-	    routes = self.routes_N
+	    routes = HereMapService._routes_N
 	elif direction is 'S':
-	    routes = self.routes_S
+	    routes = HereMapService._routes_S
 	else:
 	    return qos
 
@@ -165,7 +168,6 @@ class HereMapService(threading.Thread):
 	    travel_time = summary[0].getElementsByTagName('TravelTime')[0]
 
 	    qos[key] = {'Distance':distance.childNodes[0].data, 'BaseTime':base_time.childNodes[0].data, 'TrafficTime':traffic_time.childNodes[0].data, 'TravelTime':travel_time.childNodes[0].data}
-		
 
 	return qos
 

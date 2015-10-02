@@ -6,7 +6,7 @@ class RouteQos(object):
         self.BaseTime = basetime
         self.TrafficTime = traffictime
         self.JamFactor = jamfactor
-        selt.RouteName = routename
+        self.RouteName = routename
     
     
 class RouteQosSerializer(serializers.Serializer):

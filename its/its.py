@@ -258,7 +258,7 @@ class LogBot(threading.Thread):
                 suggestedRoute = rc.suggestRoute('S')
                 nf5Qos = rc.getNf5Qos('S')
 
-                writer.writerow({'Direction':'S', 'Time':datetime.datetime.now().isoformat(), 'JamFactor':nf5Qos.JamFactor, 'BaseTime':nf5Q0s.BaseTime, 'TrafficTime':nf5Qos.TrafficTime, 'SuggestedRoute':suggestedRoute})
+                writer.writerow({'Direction':'S', 'Time':datetime.datetime.now().isoformat(), 'JamFactor':nf5Qos.JamFactor, 'BaseTime':nf5Qos.BaseTime, 'TrafficTime':nf5Qos.TrafficTime, 'SuggestedRoute':suggestedRoute})
 
 		suggestedRoute = rc.suggestRoute('N')
 		nf5Qos = rc.getNf5Qos('N')

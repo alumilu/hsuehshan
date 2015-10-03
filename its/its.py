@@ -13,7 +13,7 @@ import xml.dom.minidom
 import csv
 
 
-from its_serializer import RouteQos
+from its_serializers import RouteQos
 from xml.dom.minidom import parse
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

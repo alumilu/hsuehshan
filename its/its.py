@@ -24,20 +24,27 @@ CHECK_INTERVAL = 300 #secs
     
 class TisvCloudService(threading.Thread):
 
+    _tis_url = 'http://tisvcloud.freeway.gov.tw/'
+    _tis_roadlevel_value5 = 'roadlevel_value5.xml'
+    _tis_roadlevel_info = 'roadlevel_info.xml'
+    _tis_roadlevel_threshold = 'roadlevel_threshold.xml'
+    _tis_route_nf5_S = {'nfb0365':'南港系統交流道到石碇交流道', 'nfb0367':'石碇交流道到坪林行控交流道', 'nfb0369':'坪林行控交流道到頭城交流道',
+			'nfb0373':'頭城交流道到宜蘭交流道', 'nfb0375':'宜蘭交流道到羅東交流道', 'nfb0377':'羅東交流道到蘇澳交流道',
+		       }
+    _tis_route_nf5_N = {'nfb0366':'石碇交流道到南港系統交流道', 'nfb0368':'坪林行控交流道到石碇交流道', 'nfb0370':'頭城交流道到坪林行控交流道', 
+			'nfb0374':'宜蘭交流道到頭城交流道', 'nfb0376':'羅東交流道到宜蘭交流道', 'nfb0378':'蘇澳交流道到羅東交流道',
+		       }
+   # _tis_route_nf5_S = ('nfb0365', 'nfb0367', 'nfb0369', 'nfb0373', 'nfb0375', 'nfb0377')
+   # _tis_route_nf5_N = ('nfb0378', 'nfb0376', 'nfb0374', 'nfb0370', 'nfb0368', 'nfb0366')   
+
+
     def __init__(self):
 	threading.Thread.__init__(self)
 
-	self.tis_url = 'http://tisvcloud.freeway.gov.tw/'
-	self.tis_roadlevel_value5 = 'roadlevel_value5.xml'
-	self.tis_roadlevel_info = 'roadlevel_info.xml'
-	self.tis_roadlevel_threshold = 'roadlevel_threshold.xml'
-	self.tis_route_nf5_S = ('nfb0365', 'nfb0367', 'nfb0369', 'nfb0373', 'nfb0375', 'nfb0377')
-	self.tis_route_nf5_N = ('nfb0378', 'nfb0376', 'nfb0374', 'nfb0370', 'nfb0368', 'nfb0366')	
-
     def run(self):
 	try:
-	    r1 = urllib2.urlopen(self.tis_url + self.tis_roadlevel_info + '.gz')
-	    r2 = urllib2.urlopen(self.tis_url + self.tis_roadlevel_threshold + '.gz')
+	    r1 = urllib2.urlopen(TisvCloudService._tis_url + TisvCloudService._tis_roadlevel_info + '.gz')
+	    r2 = urllib2.urlopen(TisvCloudService._tis_url + TisvCloudService._tis_roadlevel_threshold + '.gz')
 	except:
 	    #todo here
 	    pass
@@ -52,10 +59,10 @@ class TisvCloudService(threading.Thread):
 	    df1 = gzip.GzipFile(fileobj=b1, mode='rb')
 	    df2 = gzip.GzipFile(fileobj=b2, mode='rb')
 	
-	    with open(os.path.join(TIS_DIR, self.tis_roadlevel_info), 'w') as of1:
+	    with open(os.path.join(TIS_DIR, TisvCloudService._tis_roadlevel_info), 'w') as of1:
 		of1.write(df1.read())
 
-	    with open(os.path.join(TIS_DIR, self.tis_roadlevel_threshold), 'w') as of2:
+	    with open(os.path.join(TIS_DIR, TisvCloudService._tis_roadlevel_threshold), 'w') as of2:
 		of2.write(df2.read())
 
 	    b1.close()
@@ -65,7 +72,7 @@ class TisvCloudService(threading.Thread):
 
 	while(True):
 	    try:
-	    	response = urllib2.urlopen(self.tis_url + self.tis_roadlevel_value5 + '.gz')
+	    	response = urllib2.urlopen(TisvCloudService._tis_url + TisvCloudService._tis_roadlevel_value5 + '.gz')
 	    except:
 		#todo here
 		pass
@@ -76,7 +83,7 @@ class TisvCloudService(threading.Thread):
 
 	    	decompressFile = gzip.GzipFile(fileobj=buf, mode='rb')
 
-		with open(os.path.join(TIS_DIR, self.tis_roadlevel_value5), 'w') as outfile:
+		with open(os.path.join(TIS_DIR, TisvCloudService._tis_roadlevel_value5), 'w') as outfile:
 		    outfile.write(decompressFile.read())
 
 		buf.close()
@@ -88,13 +95,13 @@ class TisvCloudService(threading.Thread):
 	qos = {}
 
 	if direction is 'N':
-            routes = self.tis_route_nf5_N
+            routes = TisvCloudService._tis_route_nf5_N
         elif direction is 'S':
-            routes = self.tis_route_nf5_S
+            routes = TisvCloudService._tis_route_nf5_S
         else:
             return qos
 
-	roadlevel5Qos = ((xml.dom.minidom.parse(os.path.join(TIS_DIR, self.tis_roadlevel_value5))).documentElement).getElementsByTagName('Info')
+	roadlevel5Qos = ((xml.dom.minidom.parse(os.path.join(TIS_DIR, TisvCloudService._tis_roadlevel_value5))).documentElement).getElementsByTagName('Info')
 
 	for q in roadlevel5Qos:
             if q.getAttribute('routeid') in routes:
@@ -219,17 +226,16 @@ class RouteCompute(object):
 
 	if direction is 'S':
 	    nf5 = routes['route_nf5_s']
-	    routename = 'route_nf5_s'
+	    routename = 'Nankang to Toucheng'
 	elif direction is 'N':
 	    nf5 = routes['route_nf5_n']
-	    routename = 'route_nf5_n'
+	    routename = 'Toucheng to Nankang'
 
 	jf = (float(nf5['TrafficTime']) - float(nf5['BaseTime'])) / float(nf5['BaseTime'])
 	nf5['JamFactor'] = float(jf)
 
-	qos = RouteQos(routename, float(nf5['BaseTime']), float(nf5['TrafficTime']), jf)
+	qos = RouteQos(routename, float(nf5['BaseTime']), float(nf5['TrafficTime']), jf, float(nf5['Distance']))
 
-	#return nf5
 	return qos
 
     def getNf5QosTisv(self, direction):

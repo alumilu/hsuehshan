@@ -13,5 +13,5 @@ class RouteQosSerializer(serializers.Serializer):
         RouteName = serializers.CharField(max_length=64)
         BaseTime = serializers.DecimalField(max_digits=6, decimal_places=0)
         TrafficTime = serializers.DecimalField(max_digits=6, decimal_places=0)
-        JamFactor = serializers.FloatField()
+        JamFactor = serializers.DecimalField(max_digits=24, decimal_places=20)
 

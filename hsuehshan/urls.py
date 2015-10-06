@@ -17,9 +17,11 @@ urlpatterns = patterns('',
 
     #url(r'^admin/', include(admin.site.urls)),
 
+    url(r'^routeqoslist/$', its_views.RouteQosList),
     url(r'^nf5qosS/$', its_views.nf5QosS),
     url(r'^nf5qosN/$', its_views.nf5QosN),
-
+    url(r'^nf5secqosS/$', its_views.nf5SectionQosS),
+    url(r'^nf5secqosN/$', its_views.nf5SectionQosN),
     #url(r'^', include(router.urls)),
     #url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 )

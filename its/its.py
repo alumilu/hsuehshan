@@ -13,8 +13,10 @@ import xml.dom.minidom
 import csv
 
 
-from its_serializers import RouteQos
+from models import Current_RouteQos_Here, Current_RouteQos_Tsi 
 from xml.dom.minidom import parse
+from django.utils import timezone
+from itertools import chain
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TIS_DIR = (os.path.join(BASE_DIR, 'traffic_data'))
@@ -34,12 +36,38 @@ class TisvCloudService(threading.Thread):
     _tis_route_nf5_N = {'nfb0366':'石碇交流道到南港系統交流道', 'nfb0368':'坪林行控交流道到石碇交流道', 'nfb0370':'頭城交流道到坪林行控交流道', 
 			'nfb0374':'宜蘭交流道到頭城交流道', 'nfb0376':'羅東交流道到宜蘭交流道', 'nfb0378':'蘇澳交流道到羅東交流道',
 		       }
-   # _tis_route_nf5_S = ('nfb0365', 'nfb0367', 'nfb0369', 'nfb0373', 'nfb0375', 'nfb0377')
-   # _tis_route_nf5_N = ('nfb0378', 'nfb0376', 'nfb0374', 'nfb0370', 'nfb0368', 'nfb0366')   
-
 
     def __init__(self):
 	threading.Thread.__init__(self)
+
+    def writeDB(self):
+	routes = dict(chain(TisvCloudService._tis_route_nf5_N.items(), TisvCloudService._tis_route_nf5_S.items()))
+		
+	roadlevel5Qos=((xml.dom.minidom.parse(os.path.join(TIS_DIR, TisvCloudService._tis_roadlevel_value5))).documentElement).getElementsByTagName('Info')
+
+        for q in roadlevel5Qos:
+	    route_id = q.getAttribute('routeid')
+
+            if route_id in routes:
+		try:
+		    sec = Current_RouteQos_Tsi.objects.get(RouteId=route_id)
+		    sec.Level = q.getAttribute('level')
+		    sec.Speed = q.getAttribute('value') 
+		    sec.TravelTime = q.getAttribute('traveltime')
+		    sec.CollectTime = timezone.now()
+		except Current_RouteQos_Tsi.DoesNotExist:
+		    sec = Current_RouteQos_Tsi(RouteId=route_id,
+					RouteName=routes[route_id],
+					Level=q.getAttribute('level'),
+					Speed=q.getAttribute('value'),
+					TravelTime=q.getAttribute('traveltime'),
+					Distance=0,
+					CollectTime=timezone.now())
+		finally:
+		    sec.save()
+
+	return 0
+
 
     def run(self):
 	try:
@@ -89,6 +117,8 @@ class TisvCloudService(threading.Thread):
 		buf.close()
 		decompressFile.close()
 
+		self.writeDB()
+
 	    time.sleep(CHECK_INTERVAL)
 
     def getRouteQos(self, direction):
@@ -133,6 +163,48 @@ class HereMapService(threading.Thread):
     def __init__(self):
 	threading.Thread.__init__(self)
 
+    def writeDB(self, direction):
+	if direction is 'N':
+            routes = HereMapService._routes_N
+        elif direction is 'S':
+            routes = HereMapService._routes_S
+        else:
+            return -1
+         
+        for key in routes:
+            summary = (((xml.dom.minidom.parse(os.path.join(TIS_DIR, 'here_' + key + '.xml'))).documentElement).getElementsByTagName('Route')[0]).getElementsByTagName('Summary')
+
+            distance = summary[0].getElementsByTagName('Distance')[0]
+	    distance = int(distance.firstChild.nodeValue)
+
+            base_time = summary[0].getElementsByTagName('BaseTime')[0]
+	    base_time = int(base_time.firstChild.nodeValue)
+
+            traffic_time = summary[0].getElementsByTagName('TrafficTime')[0]
+	    traffic_time = int(traffic_time.firstChild.nodeValue)
+            #travel_time = summary[0].getElementsByTagName('TravelTime')[0]
+
+	    jf = (float(traffic_time) - float(base_time))/float(base_time)
+
+	    try:
+	    	qos = Current_RouteQos_Here.objects.get(RouteName=key)
+
+		qos.BaseTime = base_time
+		qos.TrafficTime = traffic_time
+		qos.JamFactor = jf
+		qos.CollectTime = timezone.now()
+	    except Current_RouteQos_Here.DoesNotExist:
+		qos = Current_RouteQos_Here(RouteName=key,
+					BaseTime=base_time,
+					TrafficTime=traffic_time,
+					Distance=distance,
+					JamFactor=jf,
+					CollectTime=timezone.now())
+	    finally:
+		qos.save()
+
+	return 0
+
     def run(self):
 	while(True):
 	    for key in HereMapService._routes_S: #get south-direction routes
@@ -145,6 +217,8 @@ class HereMapService(threading.Thread):
 		    with open(os.path.join(TIS_DIR, 'here_' + key  + '.xml'), 'w') as outfile:
 		    	outfile.write(responses.read())
 
+		self.writeDB('S')
+
 	    for key in HereMapService._routes_N: #get north-direction routes
 		try:
 		    responses = urllib2.urlopen(HereMapService._route_api_url + HereMapService._routes_N[key] + HereMapService._route_api_options +HereMapService._app_id_code + HereMapService._route_api_departure_time)
@@ -154,6 +228,8 @@ class HereMapService(threading.Thread):
 		else:
 		    with open(os.path.join(TIS_DIR, 'here_' + key + '.xml'), 'w') as outfile:
 			outfile.write(responses.read())
+
+		self.writeDB('N')
 	
 	    time.sleep(CHECK_INTERVAL)
 
@@ -175,7 +251,9 @@ class HereMapService(threading.Thread):
 	    traffic_time = summary[0].getElementsByTagName('TrafficTime')[0]
 	    travel_time = summary[0].getElementsByTagName('TravelTime')[0]
 
-	    qos[key] = {'Distance':distance.childNodes[0].data, 'BaseTime':base_time.childNodes[0].data, 'TrafficTime':traffic_time.childNodes[0].data, 'TravelTime':travel_time.childNodes[0].data}
+            jf = (float(traffic_time.firstChild.nodeValue) - float(base_time.firstChild.nodeValue))/float(base_time.firstChild.nodeValue)
+
+	    qos[key] = {'Distance':distance.childNodes[0].data, 'BaseTime':base_time.childNodes[0].data, 'TrafficTime':traffic_time.childNodes[0].data, 'TravelTime':travel_time.childNodes[0].data, 'JamFactor':jf}
 
 	return qos
 
@@ -234,9 +312,10 @@ class RouteCompute(object):
 	jf = (float(nf5['TrafficTime']) - float(nf5['BaseTime'])) / float(nf5['BaseTime'])
 	nf5['JamFactor'] = float(jf)
 
-	qos = RouteQos(routename, float(nf5['BaseTime']), float(nf5['TrafficTime']), jf, float(nf5['Distance']))
-
-	return qos
+#	qos = RouteQos(routename, float(nf5['BaseTime']), float(nf5['TrafficTime']), jf, float(nf5['Distance']))
+#
+#	return qos
+	return nf5
 
     def getNf5QosTisv(self, direction):
 	tisv = TisvCloudService()

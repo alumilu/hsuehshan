@@ -69,3 +69,9 @@ def nf5SectionQosN(request):
         serializer = TsiRouteQosSerializer(qos, many=True)
         return JSONResponse(serializer.data)
 
+def nf5SectionQosList(request):
+    if request.method == 'GET':
+	qos = Current_RouteQos_Tsi.objects.all()
+	serializer = TsiRouteQosSerializer(qos, many=True)
+        return JSONResponse(serializer.data)
+

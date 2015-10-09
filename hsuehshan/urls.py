@@ -22,6 +22,7 @@ urlpatterns = patterns('',
     url(r'^nf5qosN/$', its_views.nf5QosN),
     url(r'^nf5secqosS/$', its_views.nf5SectionQosS),
     url(r'^nf5secqosN/$', its_views.nf5SectionQosN),
+    url(r'^nf5secqoslist/$', its_views.nf5SectionQosList),
     #url(r'^', include(router.urls)),
     #url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 )
